@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MonsterQuest v2</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e94560">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MonsterQuest">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --panel: #0f3460;
+  --border: #533483;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --gold: #f5a623;
+  --green: #4caf50;
+  --red: #e94560;
+  --blue: #2196f3;
+  --text: #e8e8e8;
+  --muted: #8888aa;
+  --pixel: 'Press Start 2P', monospace;
+  --shadow: 4px 4px 0px rgba(0,0,0,0.5);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; image-rendering: pixelated; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--pixel);
+  font-size: 8px;
+  min-height: 100vh;
+  overflow: hidden;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(255,255,255,0.02) 31px, rgba(255,255,255,0.02) 32px),
+    repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(255,255,255,0.02) 31px, rgba(255,255,255,0.02) 32px);
+}
+
+/* PIXEL BORDER UTILITY */
+.px-box {
+  border: 3px solid var(--border);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,0.05);
+  background: var(--bg2);
+  image-rendering: pixelated;
+}
+.px-box-accent {
+  border: 3px solid var(--accent);
+  box-shadow: 4px 4px 0px rgba(148,35,64,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+  background: var(--bg2);
+}
+.px-box-gold {
+  border: 3px solid var(--gold);
+  box-shadow: 4px 4px 0px rgba(100,70,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+  background: var(--bg2);
+}
+
+/* LAYOUT */
+#app { display:flex; flex-direction:column; height:100vh; }
+
+header {
+  background: var(--panel);
+  border-bottom: 3px solid var(--accent);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 0px rgba(0,0,0,0.4);
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 12px;
+  color: var(--accent);
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #ff6b8a;
+  letter-spacing: 2px;
+}
+
+.hud { display:flex; gap:12px; align-items:center; }
+
+.hud-badge {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  padding: 4px 10px;
+  font-size: 7px;
+  color: var(--text);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.side-panel {
+  background: var(--bg2);
+  border-right: 3px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.side-panel.right { border-right:none; border-left: 3px solid var(--border); }
+
+.panel-header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--border);
+  padding: 8px 10px;
+  font-size: 7px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.center { display:flex; flex-direction:column; overflow:hidden; }
+
+/* TABS */
+.tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 3px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.1s;
+  letter-spacing: 0.5px;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content { flex:1; overflow-y:auto; padding:10px; }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* MONSTER CARDS */
+.mon-card {
+  padding: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.05s;
+  position: relative;
+}
+.mon-card:hover { transform: translate(-1px,-1px); }
+.mon-card:hover .px-box { box-shadow: 6px 6px 0px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05); }
+.mon-card.selected .px-box { border-color: var(--accent) !important; box-shadow: 4px 4px 0px rgba(148,35,64,0.6) !important; }
+.mon-card.fainted { opacity: 0.5; }
+
+.mon-inner { padding: 8px; }
+
+.mon-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.mon-emoji-wrap {
+  width: 40px; height: 40px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid var(--border);
+  display: flex; align-items:center; justify-content:center;
+  font-size: 22px;
+  flex-shrink:0;
+  image-rendering: pixelated;
+}
+.mon-emoji-wrap.glow { box-shadow: 0 0 8px 2px currentColor; }
+
+.mon-name { font-size:7px; color:#fff; margin-bottom:3px; }
+.mon-meta { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+.type-tag {
+  font-size: 5px;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+}
+.lv-tag { font-size:6px; color: var(--gold); }
+
+/* HP / XP BARS */
+.bar-row { margin-top:5px; }
+.bar-label { display:flex; justify-content:space-between; font-size:5px; color:var(--muted); margin-bottom:2px; }
+.bar-track { height:5px; background:#111; border:1px solid #333; }
+.bar-fill { height:100%; transition: width 0.4s; }
+.bar-hp { background: var(--green); }
+.bar-hp.med { background: var(--gold); }
+.bar-hp.low { background: var(--red); }
+.bar-xp { background: #7c3aed; }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px; margin-top:6px; }
+.stat-row { font-size:5px; color:var(--muted); display:flex; justify-content:space-between; }
+.stat-row b { color:var(--text); }
+
+/* BUTTONS */
+.btn {
+  display: inline-block;
+  padding: 6px 12px;
+  font-family: var(--pixel);
+  font-size: 6px;
+  cursor: pointer;
+  border: none;
+  letter-spacing: 0.5px;
+  transition: transform 0.05s;
+  text-transform: uppercase;
+}
+.btn:active { transform: translate(2px,2px); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+.btn-red { background: var(--accent); color:#fff; box-shadow: 3px 3px 0 #7a1e30; }
+.btn-blue { background: #1a5276; color:#fff; box-shadow: 3px 3px 0 #0a2030; border: 2px solid #2196f3; }
+.btn-gold { background: #8a5a00; color: var(--gold); box-shadow: 3px 3px 0 #3a2500; border:2px solid var(--gold); }
+.btn-green { background: #1a4a1a; color:#4caf50; box-shadow: 3px 3px 0 #0a2010; border:2px solid #4caf50; }
+.btn-grey { background: #2a2a3a; color:var(--muted); box-shadow: 3px 3px 0 #111; border:2px solid #444; }
+.btn-sm { padding:4px 8px; font-size:5px; }
+.btn-lg { padding:10px 20px; font-size:8px; }
+.btn-group { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+
+/* TYPE COLORS */
+.type-fogo { color:#ff6b6b; border-color:#ff6b6b; }
+.type-água { color:#74b9ff; border-color:#74b9ff; }
+.type-planta { color:#55efc4; border-color:#55efc4; }
+.type-elétrico { color:#fdcb6e; border-color:#fdcb6e; }
+.type-sombra { color:#a29bfe; border-color:#a29bfe; }
+.type-gelo { color:#81ecec; border-color:#81ecec; }
+.type-pedra { color:#b2bec3; border-color:#b2bec3; }
+.type-psíquico { color:#fd79a8; border-color:#fd79a8; }
+.type-dragão { color:#6c5ce7; border-color:#6c5ce7; }
+.type-veneno { color:#a29bfe; border-color:#a29bfe; }
+.type-normal { color:#dfe6e9; border-color:#dfe6e9; }
+
+/* EXPLORE */
+.area-btn {
+  display: flex;
+  align-items: center;
+  gap:8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--pixel);
+  font-size: 6px;
+  width: 100%;
+  text-align: left;
+  transition: transform 0.05s;
+}
+.area-btn:hover { transform: translate(-1px,-1px); }
+.area-icon { font-size:20px; width:32px; text-align:center; }
+.area-btn-name { color:#fff; margin-bottom:3px; }
+.area-btn-desc { color:var(--muted); font-size:5px; line-height:1.6; }
+
+/* WILD ENCOUNTER */
+.encounter-box { padding:12px; text-align:center; }
+.wild-sprite { font-size:72px; display:block; animation:bob 1.2s ease-in-out infinite; margin-bottom:8px; filter:drop-shadow(0 0 12px rgba(233,69,96,0.5)); }
+@keyframes bob { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.05)} }
+.wild-name { font-size:10px; color:#fff; margin-bottom:4px; }
+
+/* BATTLE SCREEN */
+.battle-arena {
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a0a2e 60%, #0a1a0a 100%);
+  border: 3px solid var(--accent);
+  box-shadow: 6px 6px 0 #000;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.battle-arena::before {
+  content: '';
+  position:absolute;
+  bottom:0; left:0; right:0; height:40px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 16px);
+}
+.battle-field { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
+.battle-mon { text-align:center; background: rgba(0,0,0,0.3); border:2px solid var(--border); padding:10px; }
+.b-emoji { font-size:52px; display:block; margin-bottom:6px; }
+.b-emoji.shake { animation:shake 0.3s ease-in-out; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.b-name { font-size:7px; color:#fff; margin-bottom:4px; }
+
+.moves-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0; }
+.move-btn {
+  background: #111;
+  border: 2px solid var(--border);
+  color: var(--text);
+  font-family: var(--pixel);
+  font-size: 6px;
+  padding: 8px 6px;
+  cursor: pointer;
+  text-align:left;
+  transition: transform 0.05s;
+}
+.move-btn:hover { border-color: var(--accent); background:#1a0a0e; transform:translate(-1px,-1px); }
+.move-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+.move-n { display:block; font-size:7px; color:#fff; margin-bottom:3px; }
+.move-p { font-size:5px; color:var(--muted); }
+
+.battle-log {
+  background: #050508;
+  border: 2px solid var(--border);
+  padding: 8px;
+  height: 70px;
+  overflow-y: auto;
+  font-size: 6px;
+  line-height: 2;
+}
+.log-p { color: #74b9ff; }
+.log-e { color: #ff6b6b; }
+.log-s { color: var(--gold); }
+.log-g { color: #55efc4; }
+
+/* QUESTS */
+.quest-card {
+  padding:8px;
+  margin-bottom:8px;
+  cursor: default;
+}
+.quest-title { font-size:7px; color:#fff; margin-bottom:4px; }
+.quest-desc { font-size:5px; color:var(--muted); margin-bottom:6px; line-height:1.8; }
+.quest-reward { font-size:5px; color:var(--gold); }
+.quest-done { border-color: var(--green) !important; }
+.quest-done .quest-title { color: var(--green); }
+
+/* ACHIEVEMENTS */
+.ach-card {
+  display:flex; align-items:center; gap:8px;
+  padding:8px;
+  margin-bottom:6px;
+}
+.ach-icon { font-size:20px; width:32px; text-align:center; flex-shrink:0; }
+.ach-name { font-size:6px; color:#fff; margin-bottom:3px; }
+.ach-desc { font-size:5px; color:var(--muted); }
+.ach-locked { opacity:0.3; filter:grayscale(1); }
+
+/* DEX */
+.dex-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.dex-card {
+  background: rgba(0,0,0,0.3);
+  border: 2px solid var(--border);
+  padding:8px 4px;
+  text-align:center;
+  cursor:pointer;
+  transition:transform 0.05s;
+}
+.dex-card:hover { transform:translate(-1px,-1px); }
+.dex-card.owned { border-color: var(--green); }
+.dex-emoji { font-size:22px; display:block; margin-bottom:4px; }
+.dex-name { font-size:5px; color:var(--muted); }
+
+/* SHOP */
+.shop-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px;
+  margin-bottom:6px;
+  cursor:pointer;
+  transition:transform 0.05s;
+}
+.shop-item:hover { transform:translate(-1px,-1px); }
+.shop-icon { font-size:22px; width:32px; text-align:center; }
+.shop-name { font-size:7px; color:#fff; margin-bottom:3px; }
+.shop-desc { font-size:5px; color:var(--muted); }
+.shop-price { margin-left:auto; font-size:7px; color:var(--gold); white-space:nowrap; }
+
+/* NOTIFICATION */
+.notif {
+  position:fixed; top:60px; left:50%; transform:translateX(-50%) translateY(-20px);
+  background:var(--panel); border:3px solid var(--accent);
+  box-shadow: 4px 4px 0 #000;
+  padding:8px 16px; font-size:7px; z-index:1000;
+  opacity:0; transition:all 0.2s; pointer-events:none;
+  text-align:center; max-width:280px; line-height:1.8;
+}
+.notif.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* RESULT MODAL */
+.modal-bg {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  z-index:500; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity 0.2s;
+}
+.modal-bg.show { opacity:1; pointer-events:all; }
+.modal-box {
+  background:var(--bg2); border:4px solid var(--accent);
+  box-shadow: 8px 8px 0 #000;
+  padding:24px; text-align:center; max-width:300px; width:90%;
+  transform:scale(0.8); transition:transform 0.2s;
+}
+.modal-bg.show .modal-box { transform:scale(1); }
+.modal-emoji { font-size:64px; display:block; margin-bottom:12px; }
+.modal-title { font-size:12px; color:var(--accent); margin-bottom:8px; }
+.modal-desc { font-size:6px; color:var(--muted); margin-bottom:16px; line-height:2; white-space:pre-line; }
+
+/* EVO FLASH */
+.evo-flash { animation: evoFlash 0.4s ease-in-out 3; }
+@keyframes evoFlash { 0%,100%{filter:brightness(1)} 50%{filter:brightness(3) saturate(0)} }
+
+/* PROGRESS BAR ANIMATED */
+@keyframes fillBar { from { width:0; } }
+
+/* SECTION TITLE */
+.sec-title { font-size:6px; color:var(--accent); border-bottom:2px solid var(--border); padding-bottom:4px; margin:10px 0 6px; letter-spacing:1px; }
+
+/* PIXEL DOTS DECORATION */
+.pixel-dots { letter-spacing:4px; color:var(--border); font-size:10px; }
+
+/* RARITY COLORS */
+.r-comum { color:#aaa; }
+.r-incomum { color:#4caf50; }
+.r-raro { color:#2196f3; }
+.r-épico { color:#9c27b0; }
+.r-lendário { color:#f5a623; text-shadow:0 0 6px rgba(245,166,35,0.5); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">⚡ MONSTERQUEST v2</div>
+    <div class="hud">
+      <div class="hud-badge">🏆 Lv.<span id="h-lv">1</span></div>
+      <div class="hud-badge">💰 <span id="h-gold">500</span></div>
+      <div class="hud-badge">📖 <span id="h-dex">1</span>/<span id="h-dex-total">?</span></div>
+      <div class="hud-badge">🎯 <span id="h-quests">0</span> missões</div>
+      <div class="hud-badge" style="cursor:pointer;color:#e94560;" onclick="resetGame()" title="Apagar progresso">🗑 RESET</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- LEFT: My Monsters -->
+    <div class="side-panel">
+      <div class="panel-header">⚔ EQUIPA</div>
+      <div style="padding:6px;" id="my-monsters-list"></div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('explore')">🗺 EXPLORAR</div>
+        <div class="tab" onclick="switchTab('battle')">⚔ BATALHA</div>
+        <div class="tab" onclick="switchTab('dex')">📖 POKÉDEX</div>
+        <div class="tab" onclick="switchTab('quests')">🎯 MISSÕES</div>
+        <div class="tab" onclick="switchTab('shop')">🛒 LOJA</div>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane active" id="tab-explore"></div>
+        <div class="tab-pane" id="tab-battle"></div>
+        <div class="tab-pane" id="tab-dex"></div>
+        <div class="tab-pane" id="tab-quests"></div>
+        <div class="tab-pane" id="tab-shop"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Info panel -->
+    <div class="side-panel right">
+      <div class="panel-header">🎒 INVENTÁRIO</div>
+      <div style="padding:6px;" id="right-panel"></div>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <span class="modal-emoji" id="m-emoji">🎉</span>
+    <div class="modal-title" id="m-title">TÍTULO</div>
+    <div class="modal-desc" id="m-desc"></div>
+    <button class="btn btn-red btn-lg" onclick="closeModal()">CONTINUAR</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MONSTER DEFINITIONS - 20 monstros com evoluções
+// ============================================================
+const DEFS = [
+  // FOGO
+  { id:1,  name:'FLAREL',   emoji:'🦊', type:'fogo',     hp:44, atk:14, def:9,  spd:13, rarity:'comum',    evoId:2,  evoLv:16, moves:[{n:'Chama',p:20,t:'fogo'},{n:'Mordida',p:15,t:'normal'},{n:'Brasa',p:25,t:'fogo'},{n:'Fumaça',p:0,t:'debuff'}] },
+  { id:2,  name:'IGNIOX',   emoji:'🦁', type:'fogo',     hp:70, atk:20, def:14, spd:17, rarity:'incomum',  evoId:3,  evoLv:36, moves:[{n:'Inferno',p:35,t:'fogo'},{n:'Garra',p:22,t:'normal'},{n:'Chama Dupla',p:30,t:'fogo'},{n:'Rugido',p:0,t:'debuff'}] },
+  { id:3,  name:'PYROCLAW', emoji:'🐯', type:'fogo',     hp:95, atk:28, def:18, spd:22, rarity:'raro',     evoId:null,           moves:[{n:'Inciênio',p:50,t:'fogo'},{n:'Garra Ardente',p:38,t:'fogo'},{n:'Explosão',p:45,t:'fogo'},{n:'Rugido Épico',p:0,t:'boost'}] },
+  // ÁGUA
+  { id:4,  name:'AQULIT',   emoji:'🐠', type:'água',     hp:42, atk:12, def:14, spd:11, rarity:'comum',    evoId:5,  evoLv:16, moves:[{n:'Salpico',p:18,t:'água'},{n:'Borbulha',p:12,t:'água'},{n:'Escudo',p:0,t:'defesa'},{n:'Espirrar',p:10,t:'água'}] },
+  { id:5,  name:'AQUAFIN',  emoji:'🐬', type:'água',     hp:68, atk:16, def:20, spd:14, rarity:'incomum',  evoId:6,  evoLv:36, moves:[{n:'Redemoinho',p:30,t:'água'},{n:'Jato',p:25,t:'água'},{n:'Carapaça',p:0,t:'defesa'},{n:'Maré',p:20,t:'água'}] },
+  { id:6,  name:'TIDEKRAKEN',emoji:'🐙',type:'água',     hp:98, atk:20, def:30, spd:10, rarity:'raro',     evoId:null,           moves:[{n:'Tsunami',p:50,t:'água'},{n:'Tentáculo',p:35,t:'água'},{n:'Vácuo',p:0,t:'debuff'},{n:'Dilúvio',p:45,t:'água'}] },
+  // PLANTA
+  { id:7,  name:'SPROUTL',  emoji:'🌱', type:'planta',   hp:40, atk:11, def:13, spd:9,  rarity:'comum',    evoId:8,  evoLv:16, moves:[{n:'Folha',p:15,t:'planta'},{n:'Cura',p:0,t:'cura'},{n:'Espinho',p:12,t:'planta'},{n:'Veneno',p:10,t:'veneno'}] },
+  { id:8,  name:'THORNVINE', emoji:'🌿', type:'planta',  hp:66, atk:16, def:18, spd:11, rarity:'incomum',  evoId:9,  evoLv:36, moves:[{n:'Chicote Trepadeira',p:28,t:'planta'},{n:'Cura Profunda',p:0,t:'cura'},{n:'Espinhos',p:20,t:'planta'},{n:'Veneno Forte',p:18,t:'veneno'}] },
+  { id:9,  name:'FLORADRAX', emoji:'🌺', type:'planta',  hp:90, atk:22, def:24, spd:14, rarity:'raro',     evoId:null,           moves:[{n:'Explosão Floral',p:48,t:'planta'},{n:'Grande Cura',p:0,t:'cura'},{n:'Espinhos Mortais',p:35,t:'planta'},{n:'Toxina',p:30,t:'veneno'}] },
+  // ELÉTRICO
+  { id:10, name:'ZAPLET',   emoji:'⚡', type:'elétrico', hp:38, atk:18, def:8,  spd:18, rarity:'comum',    evoId:11, evoLv:18, moves:[{n:'Choque',p:20,t:'elétrico'},{n:'Estática',p:15,t:'elétrico'},{n:'Veloz',p:0,t:'boost'},{n:'Raio',p:25,t:'elétrico'}] },
+  { id:11, name:'VOLTREX',  emoji:'🦅', type:'elétrico', hp:62, atk:26, def:11, spd:24, rarity:'incomum',  evoId:12, evoLv:38, moves:[{n:'Tempestade',p:38,t:'elétrico'},{n:'Mergulho',p:28,t:'elétrico'},{n:'Turbo',p:0,t:'boost'},{n:'Trovão',p:32,t:'elétrico'}] },
+  { id:12, name:'STORMWING', emoji:'🦜', type:'elétrico', hp:82, atk:32, def:14, spd:30, rarity:'raro',   evoId:null,           moves:[{n:'Relâmpago Supremo',p:55,t:'elétrico'},{n:'Corrente Elétrica',p:40,t:'elétrico'},{n:'Velocidade Máx',p:0,t:'boost'},{n:'Tempestade Furiosa',p:48,t:'elétrico'}] },
+  // SOMBRA
+  { id:13, name:'SHADOWPUP',emoji:'🐺', type:'sombra',   hp:42, atk:20, def:7,  spd:16, rarity:'incomum',  evoId:14, evoLv:22, moves:[{n:'Garra Sombria',p:22,t:'sombra'},{n:'Mordida Escura',p:18,t:'sombra'},{n:'Névoa',p:0,t:'esquiva'},{n:'Urro',p:12,t:'normal'}] },
+  { id:14, name:'SHADOWFANG',emoji:'🐺', type:'sombra',  hp:75, atk:28, def:12, spd:20, rarity:'raro',     evoId:null,           moves:[{n:'Trevas Absolutas',p:42,t:'sombra'},{n:'Garras do Vazio',p:32,t:'sombra'},{n:'Sombra Dupla',p:0,t:'boost'},{n:'Uivo Sombrio',p:25,t:'normal'}] },
+  // GELO
+  { id:15, name:'ICICLET',  emoji:'❄️', type:'gelo',     hp:44, atk:16, def:14, spd:12, rarity:'incomum',  evoId:16, evoLv:24, moves:[{n:'Floco',p:18,t:'gelo'},{n:'Brisa Fria',p:14,t:'gelo'},{n:'Congelar',p:22,t:'gelo'},{n:'Nevoeiro',p:0,t:'debuff'}] },
+  { id:16, name:'FROSTARA', emoji:'🦋', type:'gelo',     hp:72, atk:22, def:18, spd:16, rarity:'raro',     evoId:null,           moves:[{n:'Blizzard',p:40,t:'gelo'},{n:'Ventoinha Gelada',p:30,t:'gelo'},{n:'Cristal de Gelo',p:35,t:'gelo'},{n:'Congelamento',p:0,t:'debuff'}] },
+  // PEDRA
+  { id:17, name:'PEBBLOR',  emoji:'🪨', type:'pedra',    hp:55, atk:10, def:22, spd:5,  rarity:'comum',    evoId:18, evoLv:20, moves:[{n:'Pedrada',p:18,t:'pedra'},{n:'Fortaleza',p:0,t:'defesa'},{n:'Terremoto',p:25,t:'pedra'},{n:'Granizo',p:15,t:'pedra'}] },
+  { id:18, name:'GRANITHOR',emoji:'🦏', type:'pedra',    hp:95, atk:15, def:32, spd:6,  rarity:'raro',     evoId:null,           moves:[{n:'Avalanche',p:45,t:'pedra'},{n:'Rocha Suprema',p:35,t:'pedra'},{n:'Baluarte',p:0,t:'defesa'},{n:'Sismolança',p:40,t:'pedra'}] },
+  // LENDÁRIOS
+  { id:19, name:'PSYOWL',   emoji:'🦉', type:'psíquico', hp:80, atk:30, def:18, spd:20, rarity:'épico',    evoId:null,           moves:[{n:'Telecinese',p:42,t:'psíquico'},{n:'Confusão',p:28,t:'psíquico'},{n:'Barreira Mental',p:0,t:'defesa'},{n:'Futuro Sombrio',p:50,t:'psíquico'}] },
+  { id:20, name:'DRAKOVYRE',emoji:'🐉', type:'dragão',   hp:130,atk:38, def:25, spd:28, rarity:'lendário', evoId:null,           moves:[{n:'Bafo de Dragão',p:65,t:'dragão'},{n:'Asa Cortante',p:48,t:'dragão'},{n:'Rugido Dracônico',p:0,t:'boost'},{n:'Cauda Suprema',p:55,t:'dragão'}] },
+];
+
+const AREAS = [
+  { name:'Floresta Sombria', icon:'🌲', desc:'Monstros de planta e sombra espreitam.', monsters:[1,7,13], recLv:1 },
+  { name:'Lago Cristalino',  icon:'💧', desc:'Águas calmas escondem criaturas aquáticas.', monsters:[4,15,7], recLv:3 },
+  { name:'Caverna Vulcânica',icon:'🌋', desc:'Calor extremo abriga criaturas de fogo.', monsters:[1,2,10], recLv:5 },
+  { name:'Planícies de Raios',icon:'⛈️', desc:'Tempestades criam monstros elétricos.', monsters:[10,11,13], recLv:8 },
+  { name:'Montanha Glacial', icon:'🏔️', desc:'O frio intenso congela tudo.', monsters:[15,16,17], recLv:12 },
+  { name:'Ruínas Antigas',   icon:'🏛️', desc:'Mistério e poder habitam este lugar.', monsters:[19,18,14], recLv:18 },
+  { name:'Ninho do Dragão',  icon:'🐉', desc:'Apenas os mais fortes sobrevivem aqui.', monsters:[20,19,12], recLv:28 },
+];
+
+const SHOP_ITEMS = [
+  { name:'Poção',       icon:'🧪', desc:'Restaura 30 HP', cost:50,  type:'potion',       amt:1 },
+  { name:'Super Poção', icon:'💉', desc:'Restaura HP completamente', cost:180, type:'super_potion', amt:1 },
+  { name:'Poké Bola',   icon:'⚪', desc:'Captura monstros selvagens', cost:80, type:'ball', amt:1 },
+  { name:'Super Bola',  icon:'🔵', desc:'Melhor chance de captura', cost:220, type:'super_ball', amt:1 },
+  { name:'Ultra Bola',  icon:'🟡', desc:'Chance máxima de captura', cost:600, type:'ultra_ball', amt:1 },
+  { name:'XP Candy',    icon:'🍬', desc:'Dá 80 XP ao monstro ativo', cost:120, type:'xp_candy', amt:80 },
+  { name:'Pedra Evolução',icon:'💎', desc:'Evolui o monstro ativo imediatamente', cost:800, type:'evo_stone', amt:1 },
+  { name:'Elixir',      icon:'✨', desc:'Aumenta ATK+3 permanentemente', cost:300, type:'elixir', amt:1 },
+];
+
+const QUESTS = [
+  { id:'q1', title:'Primeiro Passo',   desc:'Captura o teu primeiro monstro selvagem', goal:'captures', n:1,  reward:{gold:100, xp:50},  done:false },
+  { id:'q2', title:'Colecionador',     desc:'Tem 5 monstros diferentes na equipa',     goal:'teamsize',  n:5,  reward:{gold:300, xp:150}, done:false },
+  { id:'q3', title:'Vencedor',         desc:'Ganha 3 batalhas contra NPCs',            goal:'wins',      n:3,  reward:{gold:200, xp:100}, done:false },
+  { id:'q4', title:'Evolução!',        desc:'Evolui um monstro pela primeira vez',     goal:'evos',      n:1,  reward:{gold:250, xp:200}, done:false },
+  { id:'q5', title:'Explorador',       desc:'Explora 4 áreas diferentes',              goal:'areas',     n:4,  reward:{gold:150, xp:100}, done:false },
+  { id:'q6', title:'Mestre do Nível',  desc:'Alcança o nível 10 com um monstro',       goal:'monlevel',  n:10, reward:{gold:500, xp:300}, done:false },
+  { id:'q7', title:'Rei da Captura',   desc:'Captura 10 monstros no total',            goal:'captures',  n:10, reward:{gold:600, xp:400}, done:false },
+  { id:'q8', title:'Pokédex Completa', desc:'Descobre 15 monstros diferentes',         goal:'discovered',n:15, reward:{gold:1000,xp:500}, done:false },
+  { id:'q9', title:'Lendário!',        desc:'Captura o DRAKOVYRE lendário',            goal:'capture_id',n:20, reward:{gold:2000,xp:1000}, done:false },
+];
+
+const ACHIEVEMENTS = [
+  { id:'a1', icon:'🎯', name:'Primeira Captura',  desc:'Captura o teu primeiro monstro',       cond:s=>s.stats.captures>=1 },
+  { id:'a2', icon:'⚔️', name:'Guerreiro',         desc:'Vence 10 batalhas',                     cond:s=>s.stats.wins>=10 },
+  { id:'a3', icon:'📖', name:'Cientista',          desc:'Descobre 10 monstros',                  cond:s=>s.discovered.length>=10 },
+  { id:'a4', icon:'💎', name:'Evolucionista',      desc:'Evolui 3 monstros',                     cond:s=>s.stats.evos>=3 },
+  { id:'a5', icon:'💰', name:'Rico',               desc:'Acumula 5000 de ouro',                  cond:s=>s.stats.goldEarned>=5000 },
+  { id:'a6', icon:'🐉', name:'Domador de Dragões', desc:'Captura o DRAKOVYRE',                   cond:s=>s.monsters.some(m=>m.defId===20) },
+  { id:'a7', icon:'🏆', name:'Campeão',            desc:'Vence 3 treinadores NPC',               cond:s=>s.stats.wins>=3 },
+  { id:'a8', icon:'⭐', name:'Nível 20',           desc:'Um monstro chega ao nível 20',          cond:s=>s.monsters.some(m=>m.level>=20) },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const DEFAULT_STATE = {
+  player: { level:1, gold:500 },
+  monsters: [],
+  activeIdx: 0,
+  inventory: { ball:5, super_ball:2, ultra_ball:0, potion:3, super_potion:0, xp_candy:0, evo_stone:0, elixir:0 },
+  discovered: [],
+  quests: QUESTS.map(q=>({...q, progress:0, done:false})),
+  achievements: [],
+  stats: { captures:0, wins:0, evos:0, goldEarned:500, areas:[], battles:0 },
+  currentTab: 'explore',
+};
+
+let S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let wildMon = null, wildHp = 0, wildMaxHp = 0, currentArea = null;
+let battleState = null;
+
+// ============================================================
+// SAVE / LOAD — usa localStorage para persistência real
+// ============================================================
+const SAVE_KEY = 'monsterquest_v2_save';
+
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+  } catch(e) { console.warn('Erro ao guardar:', e); }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      S = { ...DEFAULT_STATE, ...loaded };
+      S.quests = QUESTS.map(q => {
+        const saved = (loaded.quests||[]).find(sq=>sq.id===q.id);
+        return saved ? {...q,...saved} : {...q, progress:0, done:false};
+      });
+      S.stats = { ...DEFAULT_STATE.stats, ...(loaded.stats||{}) };
+      notify('✅ Progresso carregado!');
+    }
+  } catch(e) { console.warn('Erro ao carregar:', e); }
+
+  if (!S.monsters.length) {
+    const starter = makeMonster(DEFS[0]);
+    S.monsters.push(starter);
+    S.discovered = [1];
+  }
+  renderAll();
+}
+
+function resetGame() {
+  if (!confirm('Tens a certeza? Isto apaga TODO o progresso!')) return;
+  localStorage.removeItem(SAVE_KEY);
+  S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  wildMon = null; battleState = null;
+  const starter = makeMonster(DEFS[0]);
+  S.monsters.push(starter);
+  S.discovered = [1];
+  renderAll();
+  notify('🔄 Jogo reiniciado!');
+}
+
+// ============================================================
+// MONSTER FACTORY
+// ============================================================
+function getDef(id) { return DEFS.find(d=>d.id===id); }
+
+function makeMonster(def, level=1) {
+  const maxHp = def.hp + Math.floor(Math.random()*15) + level*4;
+  return {
+    defId: def.id, name:def.name, emoji:def.emoji, type:def.type,
+    level, xp:0, xpNeeded: Math.floor(80 * Math.pow(1.25, level-1)),
+    maxHp, currentHp:maxHp,
+    atk: def.atk + (level-1)*2, def: def.def + (level-1),
+    spd: def.spd + Math.floor((level-1)*0.5),
+    moves: def.moves.map(m=>({...m})),
+    rarity: def.rarity,
+  };
+}
+
+function getActiveMon() { return S.monsters[S.activeIdx]; }
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderMyMonsters();
+  renderRightPanel();
+  renderActiveTab();
+  updateHeader();
+  checkAchievements();
+}
+
+function updateHeader() {
+  const maxLv = S.monsters.length ? Math.max(...S.monsters.map(m=>m.level)) : 1;
+  S.player.level = maxLv;
+  document.getElementById('h-lv').textContent = maxLv;
+  document.getElementById('h-gold').textContent = S.player.gold;
+  document.getElementById('h-dex').textContent = S.discovered.length;
+  document.getElementById('h-dex-total').textContent = DEFS.length;
+  document.getElementById('h-quests').textContent = S.quests.filter(q=>q.done).length + '/' + S.quests.length;
+}
+
+function renderMyMonsters() {
+  const el = document.getElementById('my-monsters-list');
+  if (!S.monsters.length) { el.innerHTML='<div style="font-size:6px;color:var(--muted);padding:8px;">Sem monstros...</div>'; return; }
+  el.innerHTML = S.monsters.map((m,i)=>{
+    const hpPct = Math.max(0,(m.currentHp/m.maxHp)*100);
+    const hpCls = hpPct>50?'':'hpPct>25?\'med\':\'low\'';
+    const hpC = hpPct>50?'':'bar-hp '+(hpPct>25?'med':'low');
+    const xpPct = Math.min(100,(m.xp/m.xpNeeded)*100);
+    const def = getDef(m.defId);
+    const canEvo = def && def.evoId && m.level >= def.evoLv;
+    return `<div class="mon-card ${i===S.activeIdx?'selected':''} ${m.currentHp<=0?'fainted':''}" onclick="selectMon(${i})">
+      <div class="px-box"><div class="mon-inner">
+        <div class="mon-head">
+          <div class="mon-emoji-wrap">${m.emoji}</div>
+          <div>
+            <div class="mon-name">${m.name} ${canEvo?'<span style="color:#f5a623;font-size:5px;">EVO!</span>':''}</div>
+            <div class="mon-meta">
+              <span class="type-tag type-${m.type}">${m.type}</span>
+              <span class="lv-tag">Lv.${m.level}</span>
+            </div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>HP</span><span>${m.currentHp}/${m.maxHp}</span></div>
+          <div class="bar-track"><div class="bar-fill bar-hp ${hpPct<=50?(hpPct<=25?'low':'med'):''}" style="width:${hpPct}%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>XP</span><span>${m.xp}/${m.xpNeeded}</span></div>
+          <div class="bar-track"><div class="bar-fill bar-xp" style="width:${xpPct}%"></div></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-row">⚔ATK <b>${m.atk}</b></div>
+          <div class="stat-row">🛡DEF <b>${m.def}</b></div>
+          <div class="stat-row">💨SPD <b>${m.spd}</b></div>
+          <div class="stat-row r-${m.rarity}">★ <b>${m.rarity}</b></div>
+        </div>
+        ${canEvo?`<button class="btn btn-gold btn-sm" style="width:100%;margin-top:6px;" onclick="event.stopPropagation();evolve(${i})">EVOLUIR!</button>`:''}
+        ${m.currentHp<=0?'<div style="color:var(--red);font-size:5px;text-align:center;margin-top:4px;">DESMAIADO</div>':''}
+      </div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderRightPanel() {
+  const inv = S.inventory;
+  const items = [
+    {k:'ball',icon:'⚪',n:'Poké Bola'},
+    {k:'super_ball',icon:'🔵',n:'Super Bola'},
+    {k:'ultra_ball',icon:'🟡',n:'Ultra Bola'},
+    {k:'potion',icon:'🧪',n:'Poção'},
+    {k:'super_potion',icon:'💉',n:'Super Poção'},
+    {k:'xp_candy',icon:'🍬',n:'XP Candy'},
+    {k:'evo_stone',icon:'💎',n:'Pedra Evo'},
+    {k:'elixir',icon:'✨',n:'Elixir'},
+  ];
+  document.getElementById('right-panel').innerHTML = `
+    <div class="sec-title">ITENS</div>
+    ${items.map(it=>`
+      <div class="px-box" style="padding:5px 7px;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+        <span>${it.icon}</span>
+        <span style="flex:1;font-size:5px;">${it.n}</span>
+        <span style="color:var(--gold);font-size:6px;">x${inv[it.k]||0}</span>
+      </div>
+    `).join('')}
+    <div class="sec-title" style="margin-top:10px;">ESTATÍSTICAS</div>
+    <div class="px-box" style="padding:7px;">
+      <div style="font-size:5px;line-height:2.2;color:var(--muted);">
+        Capturas: <span style="color:var(--text)">${S.stats.captures}</span><br>
+        Vitórias: <span style="color:var(--text)">${S.stats.wins}</span><br>
+        Evoluções: <span style="color:var(--text)">${S.stats.evos}</span><br>
+        Ouro ganho: <span style="color:var(--gold)">${S.stats.goldEarned}</span><br>
+        Áreas visitadas: <span style="color:var(--text)">${(S.stats.areas||[]).length}</span>
+      </div>
+    </div>
+    <div class="sec-title" style="margin-top:10px;">CONQUISTAS</div>
+    ${ACHIEVEMENTS.map(a=>{
+      const unlocked = S.achievements.includes(a.id);
+      return `<div class="px-box ach-card ${unlocked?'':'ach-locked'}" style="margin-bottom:5px;">
+        <span class="ach-icon">${a.icon}</span>
+        <div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(name) {
+  S.currentTab = name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const tabs = ['explore','battle','dex','quests','shop'];
+  document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  renderActiveTab();
+}
+
+function renderActiveTab() {
+  const t = S.currentTab;
+  if (t==='explore') renderExplore();
+  if (t==='battle')  renderBattleTab();
+  if (t==='dex')     renderDex();
+  if (t==='quests')  renderQuests();
+  if (t==='shop')    renderShop();
+}
+
+// ============================================================
+// EXPLORE
+// ============================================================
+function renderExplore() {
+  const el = document.getElementById('tab-explore');
+  if (wildMon) { el.innerHTML = renderWild(); return; }
+  el.innerHTML = `
+    <div class="sec-title">ESCOLHE UMA ÁREA</div>
+    ${AREAS.map((a,i)=>`
+      <button class="area-btn px-box" onclick="goArea(${i})">
+        <span class="area-icon">${a.icon}</span>
+        <div>
+          <div class="area-btn-name">${a.name}</div>
+          <div class="area-btn-desc">${a.desc}</div>
+          <div style="color:var(--accent);font-size:5px;margin-top:2px;">Lv. recomendado: ${a.recLv}+</div>
+        </div>
+      </button>
+    `).join('')}
+  `;
+}
+
+function renderWild() {
+  const hpPct = Math.max(0,(wildHp/wildMaxHp)*100);
+  const inv = S.inventory;
+  const mon = getActiveMon();
+  const mHpPct = mon ? Math.max(0,(mon.currentHp/mon.maxHp)*100) : 0;
+  return `
+    <div class="encounter-box px-box-accent" style="padding:14px;margin-bottom:10px;">
+      <div style="font-size:6px;color:var(--accent);margin-bottom:8px;">⚡ MONSTRO SELVAGEM!</div>
+      <span class="wild-sprite">${wildMon.emoji}</span>
+      <div class="wild-name">${wildMon.name}</div>
+      <div style="margin-bottom:6px;"><span class="type-tag type-${wildMon.type}">${wildMon.type}</span> <span class="lv-tag">Lv.${wildMon.level}</span> <span class="r-${wildMon.rarity}" style="font-size:5px;">★${wildMon.rarity}</span></div>
+      <div class="bar-track" style="margin-bottom:3px;"><div class="bar-fill" style="width:${hpPct}%;background:${hpPct>50?'#4caf50':hpPct>25?'#f5a623':'#e94560'}"></div></div>
+      <div style="font-size:5px;color:var(--muted);margin-bottom:10px;">HP ${wildHp}/${wildMaxHp}</div>
+      <div style="font-size:5px;color:var(--muted);margin-bottom:8px;">Enfraquece para facilitar a captura!</div>
+      <div class="btn-group" style="justify-content:center;">
+        <button class="btn btn-red btn-sm" onclick="attackWild()">⚔ ATACAR</button>
+        ${inv.ball>0?`<button class="btn btn-grey btn-sm" onclick="throwBall('ball')">⚪(${inv.ball})</button>`:''}
+        ${inv.super_ball>0?`<button class="btn btn-blue btn-sm" onclick="throwBall('super_ball')">🔵(${inv.super_ball})</button>`:''}
+        ${inv.ultra_ball>0?`<button class="btn btn-gold btn-sm" onclick="throwBall('ultra_ball')">🟡(${inv.ultra_ball})</button>`:''}
+        <button class="btn btn-grey btn-sm" onclick="fleeWild()">🏃 FUGIR</button>
+      </div>
+    </div>
+    ${mon?`<div class="px-box" style="padding:8px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:28px;">${mon.emoji}</span>
+      <div style="flex:1;">
+        <div style="font-size:6px;color:#fff;margin-bottom:3px;">${mon.name} Lv.${mon.level}</div>
+        <div class="bar-track"><div class="bar-fill bar-hp ${mHpPct<=50?(mHpPct<=25?'low':'med'):''}" style="width:${mHpPct}%"></div></div>
+        <div style="font-size:5px;color:var(--muted);margin-top:2px;">${mon.currentHp}/${mon.maxHp} HP</div>
+      </div>
+    </div>`:''}
+  `;
+}
+
+function goArea(idx) {
+  const area = AREAS[idx];
+  currentArea = area;
+  if (!S.stats.areas) S.stats.areas = [];
+  if (!S.stats.areas.includes(area.name)) {
+    S.stats.areas.push(area.name);
+    checkQuest('areas', S.stats.areas.length);
+  }
+  const defId = area.monsters[Math.floor(Math.random()*area.monsters.length)];
+  const def = getDef(defId);
+  const lvl = Math.max(1, area.recLv - 2 + Math.floor(Math.random()*6));
+  wildMon = { ...def, level:lvl };
+  wildMaxHp = def.hp + lvl*5 + Math.floor(Math.random()*12);
+  wildHp = wildMaxHp;
+  if (!S.discovered.includes(defId)) S.discovered.push(defId);
+  renderExplore();
+  renderRightPanel();
+  updateHeader();
+  saveGame();
+}
+
+function attackWild() {
+  const mon = getActiveMon();
+  if (!mon||mon.currentHp<=0) { notify('⚠️ Nenhum monstro ativo ou desmaiado!'); return; }
+  const dmg = Math.max(4, mon.atk - Math.floor(wildMon.def*0.25) + Math.floor(Math.random()*8));
+  wildHp = Math.max(0, wildHp-dmg);
+  const wDmg = Math.max(2, wildMon.atk - Math.floor(mon.def*0.25) + Math.floor(Math.random()*5));
+  mon.currentHp = Math.max(0, mon.currentHp-wDmg);
+  if (wildHp<=0) {
+    const xpG = 25+wildMon.level*6; const goldG = 8+wildMon.level*3;
+    gainXP(mon,xpG); state_goldAdd(goldG);
+    wildMon=null;
+    renderAll(); showModal('💨','MONSTRO FUGIU!',`Deu a fuga!\n+${xpG} XP  💰+${goldG}`);
+    return;
+  }
+  renderMyMonsters(); renderExplore();
+}
+
+function throwBall(type) {
+  if (!(S.inventory[type]>0)) { notify('Sem bolas!'); return; }
+  S.inventory[type]--;
+  const hpRatio = 1-(wildHp/wildMaxHp);
+  const rates = {ball:0.25,super_ball:0.45,ultra_ball:0.72};
+  const chance = Math.min(0.95, rates[type]+hpRatio*0.35);
+  if (Math.random()<chance) {
+    const captured = makeMonster(getDef(wildMon.id), wildMon.level);
+    captured.currentHp = Math.floor(wildHp/wildMaxHp*captured.maxHp);
+    S.monsters.push(captured);
+    S.stats.captures++;
+    if (!S.discovered.includes(wildMon.id)) S.discovered.push(wildMon.id);
+    checkQuest('captures', S.stats.captures);
+    checkQuest('teamsize', S.monsters.length);
+    checkQuest('capture_id', wildMon.id);
+    wildMon=null;
+    renderAll(); showModal('🎉','CAPTURADO!',`${captured.name} foi capturado!\nAdicionado à tua equipa!`);
+  } else {
+    notify('💨 Escapou da bola!');
+    const mon=getActiveMon();
+    if(mon){ const wDmg=Math.max(1,wildMon.atk-Math.floor(mon.def*0.3)); mon.currentHp=Math.max(0,mon.currentHp-wDmg); }
+    renderExplore(); renderMyMonsters();
+  }
+  saveGame();
+}
+
+function fleeWild() { wildMon=null; renderExplore(); notify('🏃 Escapaste!'); }
+
+// ============================================================
+// EVOLUTION
+// ============================================================
+function evolve(idx) {
+  const mon = S.monsters[idx];
+  const def = getDef(mon.defId);
+  if (!def||!def.evoId) { notify('Este monstro não evolui!'); return; }
+  if (mon.level<def.evoLv) { notify(`Precisa de Lv.${def.evoLv} para evoluir!`); return; }
+  const newDef = getDef(def.evoId);
+  mon.defId = newDef.id;
+  mon.name = newDef.name;
+  mon.emoji = newDef.emoji;
+  mon.type = newDef.type;
+  mon.rarity = newDef.rarity;
+  const hpBonus = newDef.hp - def.hp;
+  mon.maxHp += hpBonus + 15;
+  mon.currentHp = mon.maxHp;
+  mon.atk += 6; mon.def += 4; mon.spd += 2;
+  mon.moves = newDef.moves.map(m=>({...m}));
+  if (!S.discovered.includes(newDef.id)) S.discovered.push(newDef.id);
+  S.stats.evos++;
+  checkQuest('evos', S.stats.evos);
+  renderAll();
+  showModal('💎','EVOLUÇÃO!',`${def.name} evoluiu para\n${newDef.name}!`);
+  saveGame();
+}
+
+// ============================================================
+// BATTLE TAB
+// ============================================================
+const NPC_ROSTER = [
+  { name:'Treinador Tó', emoji:'🧑', defId:1, level:4,  reward:90,  xpR:60  },
+  { name:'Rival Ana',    emoji:'👩', defId:4, level:9,  reward:180, xpR:120 },
+  { name:'Mestre Vitor', emoji:'🧙', defId:10,level:18, reward:380, xpR:250 },
+  { name:'Campeã Sofia', emoji:'👑', defId:19,level:28, reward:700, xpR:450 },
+  { name:'Dragão Mestre',emoji:'🐉', defId:20,level:40, reward:1500,xpR:800 },
+];
+
+function renderBattleTab() {
+  const el = document.getElementById('tab-battle');
+  if (battleState) { renderBattle(); return; }
+  el.innerHTML = `
+    <div class="sec-title">ARENA DE BATALHA</div>
+    <div style="font-size:6px;color:var(--muted);margin-bottom:10px;">Derrota treinadores para ganhar XP e ouro!</div>
+    ${NPC_ROSTER.map((npc,i)=>`
+      <button class="area-btn px-box" onclick="startBattle(${i})">
+        <span class="area-icon">${npc.emoji}</span>
+        <div>
+          <div class="area-btn-name">${npc.name}</div>
+          <div class="area-btn-desc">${getDef(npc.defId).name} Lv.${npc.level}</div>
+          <div style="color:var(--gold);font-size:5px;margin-top:2px;">💰${npc.reward}  XP+${npc.xpR}</div>
+        </div>
+      </button>
+    `).join('')}
+  `;
+}
+
+function startBattle(npcIdx) {
+  const mon = getActiveMon();
+  if (!mon||mon.currentHp<=0) { notify('⚠️ Monstro desmaiado! Cura-o primeiro.'); return; }
+  const npc = NPC_ROSTER[npcIdx];
+  const def = getDef(npc.defId);
+  const enemy = makeMonster(def, npc.level);
+  battleState = {
+    player: JSON.parse(JSON.stringify(mon)),
+    enemy, npcIdx, reward:npc.reward, xpR:npc.xpR,
+    log:[{t:`⚡ Batalha: ${mon.name} vs ${enemy.name}!`,c:'log-s'}],
+    playerTurn: mon.spd >= enemy.spd,
+  };
+  S.stats.battles++;
+  if (!battleState.playerTurn) setTimeout(enemyTurn, 700);
+  renderBattle();
+}
+
+function renderBattle() {
+  const el = document.getElementById('tab-battle');
+  if (!battleState) { renderBattleTab(); return; }
+  const {player,enemy,log} = battleState;
+  const pPct=Math.max(0,(player.currentHp/player.maxHp)*100);
+  const ePct=Math.max(0,(enemy.currentHp/enemy.maxHp)*100);
+  el.innerHTML = `
+    <div class="battle-arena">
+      <div class="battle-field">
+        <div class="battle-mon">
+          <span class="b-emoji" id="b-player">${player.emoji}</span>
+          <div class="b-name">${player.name}</div>
+          <div class="bar-track" style="height:6px;"><div class="bar-fill bar-hp ${pPct<=50?(pPct<=25?'low':'med'):''}" style="width:${pPct}%"></div></div>
+          <div style="font-size:5px;color:var(--muted);margin-top:2px;">${player.currentHp}/${player.maxHp}</div>
+        </div>
+        <div class="battle-mon">
+          <span class="b-emoji" id="b-enemy" style="filter:drop-shadow(0 0 8px rgba(233,69,96,0.5))">${enemy.emoji}</span>
+          <div class="b-name">${enemy.name}</div>
+          <div class="bar-track" style="height:6px;"><div class="bar-fill" style="width:${ePct}%;background:${ePct>50?'#4caf50':ePct>25?'#f5a623':'#e94560'}"></div></div>
+          <div style="font-size:5px;color:var(--muted);margin-top:2px;">${enemy.currentHp}/${enemy.maxHp}</div>
+        </div>
+      </div>
+      <div class="sec-title">MOVIMENTOS</div>
+      <div class="moves-grid">
+        ${player.moves.map((m,i)=>`
+          <button class="move-btn" onclick="useMove(${i})" ${battleState.playerTurn?'':'disabled'}>
+            <span class="move-n">${m.n}</span>
+            <span class="move-p">${m.p>0?'Poder:'+m.p:'Especial'} | <span class="type-${m.t}">${m.t}</span></span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="battle-log" id="bLog">${log.map(e=>`<div class="${e.c}">${e.t}</div>`).join('')}</div>
+      <div class="btn-group" style="margin-top:8px;">
+        <button class="btn btn-green btn-sm" onclick="bUsePotion()" ${S.inventory.potion>0?'':'disabled'}>🧪Poção(${S.inventory.potion})</button>
+        <button class="btn btn-grey btn-sm" onclick="fleeBattle()">🏃 FUGIR</button>
+      </div>
+    </div>
+  `;
+  const log_el=document.getElementById('bLog');
+  if(log_el) log_el.scrollTop=log_el.scrollHeight;
+}
+
+function useMove(mi) {
+  if (!battleState||!battleState.playerTurn) return;
+  const move = battleState.player.moves[mi];
+  const p=battleState.player, e=battleState.enemy;
+  let logT='', logC='log-p';
+  if (move.p===0) {
+    if(move.t==='cura'){const h=Math.floor(p.maxHp*0.2);p.currentHp=Math.min(p.maxHp,p.currentHp+h);logT=`💚 ${p.name} usou ${move.n}! +${h} HP`;}
+    else if(move.t==='defesa'){p.def+=4;logT=`🛡️ ${p.name} aumentou a defesa!`;}
+    else if(move.t==='boost'){p.atk+=3;logT=`⬆️ ${p.name} ficou mais forte!`;}
+    else if(move.t==='debuff'){e.atk=Math.max(1,e.atk-3);logT=`⬇️ ${e.name} ficou mais fraco!`;}
+    else {logT=`✨ ${p.name} usou ${move.n}!`;}
+  } else {
+    const dmg=Math.max(3,Math.floor(move.p*(p.atk/18))-Math.floor(e.def*0.3)+Math.floor(Math.random()*8));
+    e.currentHp=Math.max(0,e.currentHp-dmg);
+    logT=`⚔️ ${p.name} usou ${move.n}! (${dmg} dano)`;
+    setTimeout(()=>{const el=document.getElementById('b-enemy');if(el){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}},50);
+  }
+  battleState.log.push({t:logT,c:logC});
+  battleState.playerTurn=false;
+  if(e.currentHp<=0){endBattle(true);return;}
+  renderBattle();
+  setTimeout(enemyTurn, 800);
+}
+
+function enemyTurn() {
+  if (!battleState) return;
+  const e=battleState.enemy, p=battleState.player;
+  const validMoves = e.moves.filter(m=>m.p>0);
+  const move = validMoves[Math.floor(Math.random()*validMoves.length)]||e.moves[0];
+  const dmg = Math.max(2,Math.floor(move.p*(e.atk/18))-Math.floor(p.def*0.3)+Math.floor(Math.random()*5));
+  p.currentHp=Math.max(0,p.currentHp-dmg);
+  battleState.log.push({t:`💥 ${e.name} usou ${move.n}! (${dmg} dano)`,c:'log-e'});
+  setTimeout(()=>{const el=document.getElementById('b-player');if(el){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}},50);
+  if(p.currentHp<=0){endBattle(false);return;}
+  battleState.playerTurn=true;
+  renderBattle();
+}
+
+function endBattle(won) {
+  const mon=getActiveMon();
+  if(won){
+    const xpG=battleState.xpR, goldG=battleState.reward;
+    state_goldAdd(goldG);
+    if(mon) gainXP(mon,xpG);
+    S.stats.wins++;
+    checkQuest('wins',S.stats.wins);
+    battleState=null;
+    renderAll();
+    showModal('🏆','VITÓRIA!',`Ganhou a batalha!\n💰 +${goldG} ouro\n✨ +${xpG} XP`);
+  } else {
+    if(mon) mon.currentHp=0;
+    battleState=null;
+    renderAll();
+    showModal('💀','DERROTA!','O teu monstro desmaiou...\nUsa uma poção para recuperar!');
+  }
+  saveGame();
+}
+
+function bUsePotion() {
+  if(!battleState||S.inventory.potion<=0) return;
+  S.inventory.potion--;
+  const h=30;
+  battleState.player.currentHp=Math.min(battleState.player.maxHp,battleState.player.currentHp+h);
+  battleState.log.push({t:`🧪 Poção usada! +${h} HP`,c:'log-g'});
+  renderBattle(); renderRightPanel();
+}
+
+function fleeBattle() { battleState=null; renderBattleTab(); notify('🏃 Fugiste!'); }
+
+// ============================================================
+// POKEDEX
+// ============================================================
+function renderDex() {
+  const owned=new Set(S.monsters.map(m=>m.defId));
+  document.getElementById('tab-dex').innerHTML=`
+    <div style="font-size:6px;color:var(--muted);margin-bottom:8px;">
+      ${owned.size} capturados · ${S.discovered.length} descobertos · ${DEFS.length} total
+    </div>
+    <div class="dex-grid">
+      ${DEFS.map(def=>{
+        const isDisc=S.discovered.includes(def.id);
+        const isOwned=owned.has(def.id);
+        return `<div class="dex-card ${isOwned?'owned':''} ${!isDisc?'ach-locked':''}" onclick="dexDetail(${def.id})">
+          <span class="dex-emoji">${isDisc?def.emoji:'❓'}</span>
+          <div class="dex-name">${isDisc?def.name:'???'}</div>
+          ${isDisc?`<div class="r-${def.rarity}" style="font-size:4px;margin-top:2px;">★${def.rarity}</div>`:''}
+          ${isOwned?'<div style="color:var(--green);font-size:6px;">✓</div>':''}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function dexDetail(id) {
+  if(!S.discovered.includes(id)){notify('Não descobriste este monstro ainda!');return;}
+  const def=getDef(id);
+  const owned=S.monsters.some(m=>m.defId===id);
+  const evoTxt=def.evoId?`Evolui → ${getDef(def.evoId).name} (Lv.${def.evoLv})`:'Forma final';
+  notify(`${def.emoji} ${def.name} | ${def.type.toUpperCase()} | ${def.rarity} | ${owned?'✅ Capturado':'❌ Não capturado'} | ${evoTxt}`);
+}
+
+// ============================================================
+// QUESTS
+// ============================================================
+function renderQuests() {
+  document.getElementById('tab-quests').innerHTML=`
+    <div class="sec-title">MISSÕES ATIVAS</div>
+    ${S.quests.filter(q=>!q.done).map(q=>`
+      <div class="quest-card px-box">
+        <div class="quest-title">${q.title}</div>
+        <div class="quest-desc">${q.desc}</div>
+        <div class="bar-track" style="margin-bottom:4px;"><div class="bar-fill" style="width:${Math.min(100,Math.floor((q.progress/q.n)*100))}%;background:#7c3aed;"></div></div>
+        <div style="font-size:5px;color:var(--muted);margin-bottom:4px;">${q.progress}/${q.n}</div>
+        <div class="quest-reward">💰${q.reward.gold}  ✨${q.reward.xp} XP</div>
+      </div>
+    `).join('') || '<div style="font-size:6px;color:var(--muted);padding:8px;">Todas concluídas! 🎉</div>'}
+    <div class="sec-title">CONCLUÍDAS</div>
+    ${S.quests.filter(q=>q.done).map(q=>`
+      <div class="quest-card px-box quest-done">
+        <div class="quest-title">✅ ${q.title}</div>
+        <div class="quest-desc">${q.desc}</div>
+        <div class="quest-reward">💰${q.reward.gold}  ✨${q.reward.xp} XP — RECEBIDO</div>
+      </div>
+    `).join('') || '<div style="font-size:6px;color:var(--muted);padding:8px;">Nenhuma ainda...</div>'}
+  `;
+}
+
+function checkQuest(goal, value) {
+  S.quests.forEach(q=>{
+    if(q.done) return;
+    if(q.goal===goal) {
+      if(goal==='capture_id') { if(value===q.n) { q.progress=q.n; completeQuest(q); } }
+      else {
+        q.progress = Math.max(q.progress, value);
+        if(q.progress>=q.n) completeQuest(q);
+      }
+    }
+  });
+}
+
+function completeQuest(q) {
+  q.done=true; q.progress=q.n;
+  state_goldAdd(q.reward.gold);
+  const mon=getActiveMon();
+  if(mon) gainXP(mon, q.reward.xp);
+  notify(`🎯 MISSÃO COMPLETA: ${q.title}! +💰${q.reward.gold}`);
+  renderAll();
+  saveGame();
+}
+
+// ============================================================
+// SHOP
+// ============================================================
+function renderShop() {
+  document.getElementById('tab-shop').innerHTML=`
+    <div class="sec-title">LOJA</div>
+    <div style="font-size:6px;color:var(--gold);margin-bottom:8px;">💰 Ouro: ${S.player.gold}</div>
+    ${SHOP_ITEMS.map((item,i)=>`
+      <div class="shop-item px-box" onclick="buyItem(${i})">
+        <span class="shop-icon">${item.icon}</span>
+        <div class="shop-info">
+          <div class="shop-name">${item.name}</div>
+          <div class="shop-desc">${item.desc}</div>
+        </div>
+        <div class="shop-price">💰${item.cost}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function buyItem(i) {
+  const item=SHOP_ITEMS[i];
+  if(S.player.gold<item.cost){notify('💸 Ouro insuficiente!');return;}
+  S.player.gold-=item.cost;
+  const mon=getActiveMon();
+  if(item.type==='xp_candy'){ if(mon) gainXP(mon,item.amt); }
+  else if(item.type==='evo_stone'){
+    if(mon){ const def=getDef(mon.defId); if(def&&def.evoId){ mon.level=Math.max(mon.level,def.evoLv); evolve(S.activeIdx); } else { S.inventory.evo_stone=(S.inventory.evo_stone||0)+1; } } 
+    else { S.inventory.evo_stone=(S.inventory.evo_stone||0)+1; }
+  }
+  else if(item.type==='elixir'){ if(mon){mon.atk+=3; notify(`✨ ${mon.name} ATK+3!`);} }
+  else if(item.type==='super_potion'){ if(mon){mon.currentHp=mon.maxHp; notify(`💉 ${mon.name} curado completamente!`);} }
+  else { S.inventory[item.type]=(S.inventory[item.type]||0)+item.amt; }
+  renderAll(); renderShop();
+  notify(`✅ ${item.name} comprado!`);
+  saveGame();
+}
+
+// ============================================================
+// GAME LOGIC
+// ============================================================
+function selectMon(i) { S.activeIdx=i; renderMyMonsters(); renderExplore(); }
+
+function gainXP(mon, amount) {
+  mon.xp+=amount;
+  while(mon.xp>=mon.xpNeeded) {
+    mon.xp-=mon.xpNeeded;
+    mon.level++;
+    mon.xpNeeded=Math.floor(mon.xpNeeded*1.28);
+    mon.maxHp+=7; mon.currentHp=mon.maxHp;
+    mon.atk+=2; mon.def+=1; mon.spd+=1;
+    notify(`⬆️ ${mon.name} subiu para Lv.${mon.level}!`);
+    checkQuest('monlevel', mon.level);
+    // Check if can evolve
+    const def=getDef(mon.defId);
+    if(def&&def.evoId&&mon.level>=def.evoLv) notify(`💎 ${mon.name} pode EVOLUIR! Clica em EVOLUIR!`);
+  }
+  S.player.level=Math.max(...S.monsters.map(m=>m.level));
+  updateHeader();
+  saveGame();
+}
+
+function state_goldAdd(amount) {
+  S.player.gold+=amount;
+  S.stats.goldEarned+=amount;
+  checkQuest('gold', S.stats.goldEarned);
+  updateHeader();
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(a=>{
+    if(!S.achievements.includes(a.id) && a.cond(S)) {
+      S.achievements.push(a.id);
+      notify(`🏅 CONQUISTA DESBLOQUEADA: ${a.name}!`);
+      saveGame();
+    }
+  });
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+let _notifT=null;
+function notify(msg) {
+  const el=document.getElementById('notif');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_notifT);
+  _notifT=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function showModal(emoji,title,desc) {
+  document.getElementById('m-emoji').textContent=emoji;
+  document.getElementById('m-title').textContent=title;
+  document.getElementById('m-desc').textContent=desc;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => { loadGame(); });
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js")
+      .then(() => console.log("SW registado!"))
+      .catch(e => console.log("SW erro:", e));
+  });
+}
+</script>
+</body>
+</html>
